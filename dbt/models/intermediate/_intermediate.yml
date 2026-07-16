@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_shopify_deduplicated
+    description: "Shopify orders with API-retry duplicates removed."
+  - name: int_amazon_normalized
+    description: "Amazon settlements with CAD converted to USD."
+    columns:
+      - name: original_currency
+        tests:
+          - accepted_values:
+              values: ['USD','CAD']
+  - name: int_pos_classified
+    description: "POS sales with training rows dropped, returns identified."
+    columns:
+      - name: line_type
+        tests:
+          - accepted_values:
+              values: ['sale','return']
+  - name: int_products_resolved
+    description: "One row per SKU; conflicting-cost duplicates resolved to lowest."
+    columns:
+      - name: sku
+        tests: [unique, not_null]

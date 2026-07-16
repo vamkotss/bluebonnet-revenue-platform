@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Date spine for the full order history."
+    columns:
+      - name: date_key
+        description: "Primary key; one row per calendar day."
+        tests: [unique, not_null]
+
+  - name: dim_product
+    description: "Resolved product catalogue, one row per SKU."
+    columns:
+      - name: product_key
+        tests: [unique, not_null]
+      - name: category
+        tests:
+          - accepted_values:
+              values: ['Bedding','Kitchen','Decor','Bath','Outdoor','Lighting']
+
+  - name: dim_store
+    description: "The 12 physical stores."
+    columns:
+      - name: store_key
+        tests: [unique, not_null]
+
+  - name: fact_order_lines
+    description: "Order-date revenue for Shopify and POS. Grain: one sold line."
+    columns:
+      - name: order_line_key
+        tests: [unique, not_null]
+      - name: channel
+        tests:
+          - accepted_values:
+              values: ['shopify','pos']
+      - name: product_key
+        description: "FK to dim_product."
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_key
+
+  - name: fact_settlements
+    description: "Amazon settlements, cash view net of fees, currency-normalized."
+    columns:
+      - name: settlement_key
+        tests: [unique, not_null]
+      - name: channel
+        tests:
+          - accepted_values:
+              values: ['amazon']
+      - name: original_currency
+        tests:
+          - accepted_values:
+              values: ['USD','CAD']

@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: "Faithfully-landed raw data from the four channel sources."
+    tables:
+      - name: shopify_orders
+      - name: amazon_settlements
+      - name: pos_transactions
+      - name: product_master
+      - name: file_manifest
