@@ -1,0 +1,76 @@
+# Airflow services for the Bluebonnet pipeline.
+# Run alongside the warehouse:  docker compose -f docker-compose.yml -f docker-compose.airflow.yml up -d
+#
+# This uses Airflow's LocalExecutor with its own metadata Postgres, kept separate
+# from the warehouse. The DAG, the src package, and the data directory are mounted
+# in so Airflow runs the exact code in this repo.
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.10.4-python3.12
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_meta:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    # Point the pipeline at the warehouse container (not localhost - inside Docker
+    # the warehouse is reachable by its service name).
+    BB_DB_HOST: warehouse
+    BB_DB_PORT: '5432'
+    PYTHONPATH: /opt/airflow/src
+    _PIP_ADDITIONAL_REQUIREMENTS: dbt-postgres==1.9.0 sqlalchemy psycopg2-binary pandas openpyxl pyarrow
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./src:/opt/airflow/src
+    - ./dbt:/opt/airflow/dbt
+    - ./data:/opt/airflow/data
+    - airflow_logs:/opt/airflow/logs
+  depends_on:
+    airflow_meta:
+      condition: service_healthy
+
+services:
+  airflow_meta:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_meta_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+  airflow_init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username admin --password admin \
+          --firstname admin --lastname admin --role Admin --email admin@example.com
+    restart: on-failure
+
+  airflow_webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+
+  airflow_scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+
+volumes:
+  airflow_meta_data:
+  airflow_logs:
