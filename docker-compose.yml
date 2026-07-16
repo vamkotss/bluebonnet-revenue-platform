@@ -1,0 +1,15 @@
+services:
+  warehouse:
+    image: postgres:16
+    container_name: bluebonnet_warehouse
+    environment:
+      POSTGRES_USER: bluebonnet
+      POSTGRES_PASSWORD: bluebonnet
+      POSTGRES_DB: warehouse
+    ports:
+      - "5433:5432"
+    volumes:
+      - warehouse_data:/var/lib/postgresql/data
+
+volumes:
+  warehouse_data:
