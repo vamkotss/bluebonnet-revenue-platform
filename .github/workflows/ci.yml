@@ -1,0 +1,75 @@
+name: CI
+
+# Runs on every push and pull request. A broken model, a failing test, or a
+# reconciliation break blocks the PR - the whole point of CI for a data pipeline.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    # A real Postgres 16, as a service container, so the pipeline runs against the
+    # same database it uses in production - not a mock.
+    services:
+      warehouse:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bluebonnet
+          POSTGRES_PASSWORD: bluebonnet
+          POSTGRES_DB: warehouse
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bluebonnet"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # CI scale: a 2-month window that keeps every defect but runs in seconds.
+      BB_CI_MODE: "1"
+      BB_DB_HOST: localhost
+      BB_DB_PORT: "5433"
+      PYTHONPATH: src
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install dbt-postgres
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Generate messy source data (CI scale)
+        run: python -m generators.generate --mode history
+
+      - name: Build the bank reconciliation control
+        run: python -m generators.make_bank_seed
+
+      - name: Load raw data (idempotent ingestion)
+        run: python -m bluebonnet.ingest --source all --raw-dir data/raw --reset
+
+      - name: dbt build (models + tests + reconciliation)
+        working-directory: dbt
+        run: |
+          dbt seed
+          dbt build
+        env:
+          # dbt reads the profile from the repo, pointed at the service Postgres.
+          DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+
+      - name: Run the Python test suite
+        run: pytest tests/ -q

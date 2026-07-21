@@ -1,0 +1,16 @@
+# Repo-local dbt profile for CI. Reads connection details from environment
+# variables so the same file works in CI (service Postgres) and locally.
+# Local dev can still use ~/.dbt/profiles.yml; this one is picked up when
+# DBT_PROFILES_DIR points at the dbt/ folder (as the CI workflow sets).
+bluebonnet:
+  target: ci
+  outputs:
+    ci:
+      type: postgres
+      host: "{{ env_var('BB_DB_HOST', 'localhost') }}"
+      port: "{{ env_var('BB_DB_PORT', '5433') | int }}"
+      user: "{{ env_var('BB_DB_USER', 'bluebonnet') }}"
+      password: "{{ env_var('BB_DB_PASSWORD', 'bluebonnet') }}"
+      dbname: "{{ env_var('BB_DB_NAME', 'warehouse') }}"
+      schema: analytics
+      threads: 4

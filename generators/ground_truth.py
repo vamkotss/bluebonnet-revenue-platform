@@ -33,10 +33,18 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 
+import os
+
 SEED = 20260716
 
+# Scale is env-configurable so CI can run a short window fast while local/full
+# runs cover 18 months. EVERY defect is still present at CI scale - the messiness
+# is proportional, not removed - so CI genuinely exercises the same code paths.
+# BB_CI_MODE=1 shrinks the window to ~2 months.
+_CI = os.environ.get("BB_CI_MODE") == "1"
+
 START_DATE = date(2024, 7, 1)
-END_DATE = date(2025, 12, 31)   # 18 months
+END_DATE = date(2024, 8, 31) if _CI else date(2025, 12, 31)   # 2 months in CI, else 18
 
 CHANNELS = ["shopify", "amazon", "pos"]
 CHANNEL_WEIGHTS = [0.45, 0.35, 0.20]   # share of order volume

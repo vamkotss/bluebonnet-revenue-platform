@@ -31,10 +31,20 @@ import pandas as pd
 
 # The date Shopify "changed its schema". Orders before use the old discount
 # shape; orders after use the new nested discount_allocations structure.
-SHOPIFY_SCHEMA_DRIFT_DATE = pd.Timestamp("2025-03-01")
+import os
+
+# In CI the window is only ~2 months (Jul-Aug 2024), so the schema-drift and
+# format-change cutovers are placed inside that window. At full scale they sit
+# mid-history. Either way BOTH sides of each cutover are generated, so the
+# drift-handling code is exercised in CI exactly as in a full run.
+_CI = os.environ.get("BB_CI_MODE") == "1"
+
+# The date Shopify "changed its schema". Orders before use the old discount
+# shape; orders after use the new nested discount_allocations structure.
+SHOPIFY_SCHEMA_DRIFT_DATE = pd.Timestamp("2024-08-01" if _CI else "2025-03-01")
 
 # The date Amazon "updated its report format". Column names change after this.
-AMAZON_FORMAT_CHANGE_DATE = pd.Timestamp("2025-06-01")
+AMAZON_FORMAT_CHANGE_DATE = pd.Timestamp("2024-08-01" if _CI else "2025-06-01")
 
 AMAZON_SETTLEMENT_LAG_DAYS = 14
 AMAZON_FEE_RATE = 0.15
