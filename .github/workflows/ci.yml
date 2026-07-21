@@ -34,7 +34,7 @@ jobs:
       BB_CI_MODE: "1"
       BB_DB_HOST: localhost
       BB_DB_PORT: "5433"
-      PYTHONPATH: src
+      PYTHONPATH: src:.
 
     steps:
       - uses: actions/checkout@v4
