@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/vamkotss/bluebonnet-revenue-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/vamkotss/bluebonnet-revenue-platform/actions/workflows/ci.yml)
 
+![dbt lineage graph: four raw sources flowing through staging and intermediate cleaning into a star schema with reconciliation guardrails](docs/lineage.png)
+
+**A Texas home-goods retailer sells through Shopify, Amazon, and 12 physical stores...**
+
 **A Texas home-goods retailer sells through Shopify, Amazon, and 12 physical stores. Three channel reports never agree with the bank deposits — refunds land weeks late, Amazon settles in fee-netted batches, and POS files sometimes never arrive. Finance loses four days a month stitching it together in Excel. This is the pipeline that produces one trusted daily net-revenue number by channel — and that ties to the bank, on a schedule, with alarms when it breaks.**
 
 > **The hard part isn't moving the data. It's making the books tie — and being honest about where they don't.**
